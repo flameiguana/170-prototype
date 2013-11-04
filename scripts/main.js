@@ -31,7 +31,6 @@ var MUD_INDEX = 2;
 var needTransform = false;
 var needPickup = false;
 var needDrop = false;
-
 function robotKey(){
     needTransform = true;
 }
@@ -58,12 +57,12 @@ function create() {
 
     groupPickup = game.add.group();
 
-    platform = game.add.group();
-    platformS = platform.create(600, 1400, 'platform-image');
+    platform = groupPickup.create(600, 1400, 'platform-image');
     platform.canPickup = false;
 
     frog = groupPickup.create(400, 300, 'frog-baby');
     frog.canPickup = false;
+    frog.bound = false;
     frog.body.immovable = true;
 
 
@@ -158,6 +157,7 @@ function update() {
 
     if(needPickup){
         //Set which forms can pickup what
+
         if(player.robotForm)
             platform.canPickup = true;
         else
@@ -167,7 +167,13 @@ function update() {
             //careful here, this property is per object
             if(Phaser.Rectangle.intersects(player.pickupArea.bounds, 
                 groupPickup.getAt(i).bounds) && groupPickup.getAt(i).canPickup){
-                player.pickup(groupPickup.getAt(i));
+                if(frog.bound && player.robotForm){
+                    //pickup the whole group. can still modify x and y
+                    player.pickup(groupPickup);
+                }
+                else 
+                    //default single objet
+                    player.pickup(groupPickup.getAt(i));
                 break;
             }
         }
@@ -179,10 +185,11 @@ function update() {
         //okay way of doing this
         if(player.drop() === frog){
             if(Phaser.Rectangle.intersects(frog.bounds, platform.bounds)){
-                //bind frog to platform 
+                frog.bound = true;
                 console.log("frogs on platforms");
-
             }
+            else
+                frog.bound = false;
             //check if on platform
         }
 

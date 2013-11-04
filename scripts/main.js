@@ -2,8 +2,6 @@
 var game = new Phaser.Game(800, 600, Phaser.CANVAS, '', { preload: preload, create: create, update: update, render: render });
 
 
-
-
 function preload() {
     game.load.image('player-image', 'assets/sprites/player.png');
     game.load.image('fruit', 'assets/sprites/fruit.png');
@@ -23,7 +21,6 @@ var mainTileSet;
 var mainMap;
 var layer;
 
-
 var groupPickup;
 var fruit;
 
@@ -31,8 +28,17 @@ var actionKey, transformKey;
 var MUD_INDEX = 2;
 
 var needTransform = false;
+var needPickup = false;
+var needDrop = false;
 function robotKey(){
     needTransform = true;
+}
+
+function actionKeyDo(){
+    if(player.holdingSomething)
+        needDrop = true;
+    else
+        needPickup = true;
 }
 
 function create() {
@@ -63,56 +69,58 @@ function create() {
 
 
     groupPickup = game.add.group();
-    fruit = groupPickup.create(200, 1500, 'fruit');
+    fruit = groupPickup.create(400, 300, 'fruit');
+    fruit.canPickup = false;
     fruit.body.immovable = true;
 
     //Prevent browser from using these.
     game.input.keyboard.addKeyCapture([ Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.UP, Phaser.Keyboard.DOWN ]);
     transformKey = game.input.keyboard.addKey(Phaser.Keyboard.D);
     transformKey.onDown.add(robotKey, this);
-}
+    actionKey = game.input.keyboard.addKey(Phaser.Keyboard.S);
+    actionKey.onDown.add(actionKeyDo, this);
 
+    player.transform();
+}
 
 
 function update() {
     game.camera.follow(player.sprite);
-    player.update();
+    
 
     player.group.setAll('body.velocity.x', 0);
     player.group.setAll('body.velocity.y', 0);
 
     //TODO: set the other body immovable so that you cant transform when colliding.
     player.canTransform = true;
+    fruit.canPickup = false;
 
     //console.log("x " + player.sprite.x + ", y " + player.sprite.y);
     if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT))
     {
-        //player.sprite.body.rotation = 270;
+        player.sprite.body.rotation = 270;
         player.sprite.body.velocity.x = -200;
-        
-        player.group.angle =  270;
         /*
+        player.group.setAll('body.rotation', 270);
         player.group.setAll('body.velocity.x', -200);
         */
     }
     else if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT))
     {
-       // player.sprite.body.rotation = 90;
+        player.sprite.body.rotation = 90;
         player.sprite.body.velocity.x = 200;
-        
-        player.group.angle =  90;
         /*
+        player.group.setAll('body.rotation', 90);
         player.group.setAll('body.velocity.x', 200);
         */
     }
 
     if (game.input.keyboard.isDown(Phaser.Keyboard.UP))
     {
-       // player.sprite.body.rotation = 0;
+        player.sprite.body.rotation = 0;
         player.sprite.body.velocity.y = -200;
-       
-        player.group.angle =  0;
-         /*
+        /*
+        player.group.setAll('body.rotation', 0);
         player.group.setAll('body.velocity.y', -200);
 
         */
@@ -120,11 +128,10 @@ function update() {
 
     else if (game.input.keyboard.isDown(Phaser.Keyboard.DOWN))
     {
-        //player.sprite.body.rotation = 180;
+        player.sprite.body.rotation = 180;
         player.sprite.body.velocity.y = 200; 
-        
-        player.group.angle =  180;
         /*
+        player.group.setAll('body.rotation', 180);
         player.group.setAll('body.velocity.y', 200);
         */
     }
@@ -139,12 +146,27 @@ function update() {
         needTransform = false;
     }
 
-    game.physics.collide(player.group, layer, collisionHandler);
-    if(Phaser.Rectangle.intersects(player.pickupAreaR.bounds, fruit.bounds))
-        console.log("get it");
-    game.physics.collide(player.group, groupPickup, collisionHandler);
-    
+    if(Phaser.Rectangle.intersects(player.pickupAreaR.bounds, fruit.bounds)){
+        fruit.canPickup = true;
+    }
 
+    if(needPickup){
+        for(var i = 0; i < groupPickup.countLiving(); i++){
+            //careful here, this property is per object
+            if(groupPickup.getAt(i).canPickup)
+                player.pickup(groupPickup.getAt(i));
+        }
+        needPickup = false;
+    }
+    else if(needDrop){
+        player.drop();
+        needDrop = false;
+    }
+
+    game.physics.collide(player.group, layer, collisionHandler);
+    if(!player.holdingSomething)
+        game.physics.collide(player.group, groupPickup, collisionHandler);
+    player.update();
 }
 
 function collisionHandler (obj1, obj2) {
@@ -152,7 +174,6 @@ function collisionHandler (obj1, obj2) {
     console.log("collision handler");
     return true;
 }
-
 
 function render () {
     game.debug.renderQuadTree(game.physics.quadTree);

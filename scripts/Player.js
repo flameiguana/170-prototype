@@ -32,11 +32,20 @@ Player = function (normalSprite, robotSprite, pickupAreaR){
 	console.log(this.robotSprite);
 	this.robotForm = true;
 	this.canTransform = true;
+
+	this.holdingSomething = false; //cant transform while holding something.
+	this.carrying = null;
+	this.displacement = new Phaser.Point();
 }
 
 Player.prototype.update = function(){
 	this.pickupAreaR.x = this.robotSprite.x;
 	this.pickupAreaR.y = this.robotSprite.y - this.robotSprite.height/2;
+
+	if(this.holdingSomething){
+		this.carrying.x = this.sprite.x + this.displacement.x;
+		this.carrying.y = this.sprite.y + this.displacement.y;
+	}
 	//this.pickupAreaR.body.rotation = this.robotSprite.body.rotation;
 	 //- this.robotSprite.height/2;
 	
@@ -45,12 +54,27 @@ Player.prototype.update = function(){
 		//this.robotSprite.center.y - this.robotSprite.height/2);
 }
 
+Player.prototype.pickup = function(sprite){
+	this.holdingSomething = true;
+	this.displacement.x = sprite.x - this.sprite.x;
+	this.displacement.y = sprite.y - this.sprite.y;
+	this.carrying = sprite;
+	console.log("got it!");
+}
+
+Player.prototype.drop = function(){
+	this.holdingSomething = false;
+	this.carrying = null;
+	console.log("drop it!");
+}
+
 Player.prototype.transform = function(){
-	if(this.canTransform === true){
+	if(this.canTransform === true && !this.holdingSomething){
 		if(this.robotForm === true){
 			this.normalSprite.reset(this.robotSprite.x, this.robotSprite.y);
 			this.sprite = this.normalSprite;
 			this.robotSprite.visible = false;
+			this.pickupAreaR.visible = false;
 			this.robotSprite.immovable = true;
 			//this.robotSprite.kill();
 		}
@@ -59,6 +83,7 @@ Player.prototype.transform = function(){
 			this.robotSprite.reset(this.normalSprite.x, this.normalSprite.y);
 			this.sprite = this.robotSprite;
 			this.normalSprite.visible = false;
+			this.pickupAreaR.visible = true;
 			this.normalSprite.immovable = true;
 			//this.normalSprite.kill();
 		}
@@ -70,3 +95,4 @@ Player.prototype.transform = function(){
 	else
 		return false;
 }
+

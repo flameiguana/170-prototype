@@ -4,10 +4,11 @@ var game = new Phaser.Game(800, 600, Phaser.CANVAS, '', { preload: preload, crea
 
 function preload() {
     game.load.image('player-image', 'assets/sprites/player.png');
-    game.load.image('fruit', 'assets/sprites/fruit.png');
+    game.load.image('frog-baby', 'assets/sprites/frog-baby.png');
     game.load.image('robot-image', 'assets/sprites/robot.png');
 
     game.load.image('robot-pickup','assets/sprites/pickup_area_robo.png');
+    game.load.image('normal-pickup', 'assets/sprites/pickup_area_fellow.png');
 
     game.load.tileset('tiles', 'assets/maps/tiles.png', 64, 64, 4);
     game.load.tilemap('forest', 'assets/maps/forest.json', null,  Phaser.Tilemap.TILED_JSON);
@@ -22,7 +23,7 @@ var mainMap;
 var layer;
 
 var groupPickup;
-var fruit;
+var frog;
 
 var actionKey, transformKey;
 var MUD_INDEX = 2;
@@ -65,13 +66,17 @@ function create() {
 
     var pickupRobo = game.add.sprite(900,400, 'robot-pickup');
     pickupRobo.anchor.setTo(0.5, 1.0);
+
+    var pickupNormal = game.add.sprite(900,400, 'normal-pickup');
+    pickupRobo.anchor.setTo(0.5, 1.0);
+
     player = new Player(psprite, rsprite, pickupRobo);
 
 
     groupPickup = game.add.group();
-    fruit = groupPickup.create(400, 300, 'fruit');
-    fruit.canPickup = false;
-    fruit.body.immovable = true;
+    frog = groupPickup.create(400, 300, 'frog-baby');
+    frog.canPickup = false;
+    frog.body.immovable = true;
 
     //Prevent browser from using these.
     game.input.keyboard.addKeyCapture([ Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.UP, Phaser.Keyboard.DOWN ]);
@@ -93,7 +98,7 @@ function update() {
 
     //TODO: set the other body immovable so that you cant transform when colliding.
     player.canTransform = true;
-    fruit.canPickup = false;
+    frog.canPickup = false;
 
     //console.log("x " + player.sprite.x + ", y " + player.sprite.y);
     if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT))
@@ -146,8 +151,8 @@ function update() {
         needTransform = false;
     }
 
-    if(Phaser.Rectangle.intersects(player.pickupAreaR.bounds, fruit.bounds)){
-        fruit.canPickup = true;
+    if(Phaser.Rectangle.intersects(player.pickupAreaR.bounds, frog.bounds)){
+        frog.canPickup = true;
     }
 
     if(needPickup){
@@ -176,5 +181,5 @@ function collisionHandler (obj1, obj2) {
 }
 
 function render () {
-    game.debug.renderQuadTree(game.physics.quadTree);
+    //game.debug.renderQuadTree(game.physics.quadTree);
 }

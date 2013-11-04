@@ -6,7 +6,6 @@ var game = new Phaser.Game(800, 600, Phaser.CANVAS, '', { preload: preload, crea
 
 function preload() {
     game.load.image('player-image', 'assets/sprites/player.png');
-    game.load.image('player-image', 'assets/sprites/player.png');
     game.load.image('fruit', 'assets/sprites/fruit.png');
     game.load.image('robot-image', 'assets/sprites/robot.png');
 
@@ -26,19 +25,14 @@ var layer;
 
 
 var groupPickup;
-
+var fruit;
 
 var actionKey, transformKey;
 var MUD_INDEX = 2;
 
-//add invisible body that is always collideable
+var needTransform = false;
 function robotKey(){
-    if(player.transform()){
-        if(player.robotForm === true)
-             mainTileSet.setCollision(MUD_INDEX, false, false, false, false);
-         else 
-            mainTileSet.setCollision(MUD_INDEX, true, true, true, true);
-    }
+    needTransform = true;
 }
 
 function create() {
@@ -59,17 +53,17 @@ function create() {
     psprite.anchor.setTo(0.5, 0.5);
     psprite.name = 'player-sprite';
 
-    rsprite = game.add.sprite(0, 0, 'robot-image');
+    rsprite = game.add.sprite(380, 1680, 'robot-image');
     rsprite.anchor.setTo(0.5, 0.5);
     rsprite.name = 'robot-sprite';
 
-    var pickupRobo = game.add.sprite(0,0, 'robot-pickup');
+    var pickupRobo = game.add.sprite(900,400, 'robot-pickup');
     pickupRobo.anchor.setTo(0.5, 1.0);
     player = new Player(psprite, rsprite, pickupRobo);
 
 
     groupPickup = game.add.group();
-    var fruit = groupPickup.create(200, 200, 'fruit');
+    fruit = groupPickup.create(200, 1500, 'fruit');
     fruit.body.immovable = true;
 
     //Prevent browser from using these.
@@ -79,50 +73,87 @@ function create() {
 }
 
 
+
 function update() {
     game.camera.follow(player.sprite);
+    player.update();
 
-
-    player.sprite.body.velocity.x = 0;
-    player.sprite.body.velocity.y = 0;
+    player.group.setAll('body.velocity.x', 0);
+    player.group.setAll('body.velocity.y', 0);
 
     //TODO: set the other body immovable so that you cant transform when colliding.
     player.canTransform = true;
 
-    game.physics.collide(player.sprite, layer, collisionHandler);
-    game.physics.collide(player.sprite, groupPickup);
-
     //console.log("x " + player.sprite.x + ", y " + player.sprite.y);
     if (game.input.keyboard.isDown(Phaser.Keyboard.LEFT))
     {
-        player.sprite.body.rotation = 270;
+        //player.sprite.body.rotation = 270;
         player.sprite.body.velocity.x = -200;
+        
+        player.group.angle =  270;
+        /*
+        player.group.setAll('body.velocity.x', -200);
+        */
     }
     else if (game.input.keyboard.isDown(Phaser.Keyboard.RIGHT))
     {
-        player.sprite.body.rotation = 90;
+       // player.sprite.body.rotation = 90;
         player.sprite.body.velocity.x = 200;
+        
+        player.group.angle =  90;
+        /*
+        player.group.setAll('body.velocity.x', 200);
+        */
     }
 
     if (game.input.keyboard.isDown(Phaser.Keyboard.UP))
     {
+       // player.sprite.body.rotation = 0;
         player.sprite.body.velocity.y = -200;
-        player.sprite.body.rotation = 0;
+       
+        player.group.angle =  0;
+         /*
+        player.group.setAll('body.velocity.y', -200);
+
+        */
     }
 
     else if (game.input.keyboard.isDown(Phaser.Keyboard.DOWN))
     {
-        player.sprite.body.velocity.y = 200;
-        player.sprite.body.rotation = 180;
+        //player.sprite.body.rotation = 180;
+        player.sprite.body.velocity.y = 200; 
+        
+        player.group.angle =  180;
+        /*
+        player.group.setAll('body.velocity.y', 200);
+        */
     }
-    player.update();
+
+    if(needTransform){
+        if(player.transform()){
+            if(player.robotForm)
+                mainTileSet.setCollision(MUD_INDEX, false, false, false, false);
+             else 
+                mainTileSet.setCollision(MUD_INDEX, true, true, true, true);
+        }
+        needTransform = false;
+    }
+
+    game.physics.collide(player.group, layer, collisionHandler);
+    if(Phaser.Rectangle.intersects(player.pickupAreaR.bounds, fruit.bounds))
+        console.log("get it");
+    game.physics.collide(player.group, groupPickup, collisionHandler);
+    
 
 }
 
 function collisionHandler (obj1, obj2) {
     player.canTransform = false;
+    console.log("collision handler");
+    return true;
 }
 
+
 function render () {
-    //game.debug.renderQuadTree(game.physics.quadTree);
+    game.debug.renderQuadTree(game.physics.quadTree);
 }

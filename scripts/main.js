@@ -13,8 +13,12 @@ function preload() {
 
     game.load.tileset('tiles', 'assets/maps/tiles.png', 64, 64, 4);
     game.load.tilemap('forest', 'assets/maps/forest.json', null,  Phaser.Tilemap.TILED_JSON);
+
+    game.load.audio('robo-error', ['assets/sounds/robo-error.ogg']);
+    game.load.audio('clear-sound', ['assets/sounds/stage-clear.ogg']);
 }
 
+var roboESound, winSound;
 var psprite, rsprite;
 var player;
 
@@ -43,6 +47,9 @@ function actionKeyDo(){
 }
 
 function create() {
+
+    roboESound = game.add.audio('robo-error');
+    winSound = game.add.audio('clear-sound');
 
     Phaser.Canvas.setSmoothingEnabled(game.context, false);
 
@@ -131,7 +138,6 @@ function update() {
         /*
         player.group.setAll('body.rotation', 0);
         player.group.setAll('body.velocity.y', -200);
-
         */
     }
 
@@ -157,26 +163,33 @@ function update() {
 
     if(needPickup){
         //Set which forms can pickup what
-
         if(player.robotForm)
             platform.canPickup = true;
         else
             frog.canPickup = true;
-
+        var failPickup = false;
         for(var i = 0; i < groupPickup.countLiving(); i++){
-            //careful here, this property is per object
+            //careful here, canpickup property is per object
             if(Phaser.Rectangle.intersects(player.pickupArea.bounds, 
-                groupPickup.getAt(i).bounds) && groupPickup.getAt(i).canPickup){
-                if(frog.bound && player.robotForm){
+                groupPickup.getAt(i).bounds)){
+                if(groupPickup.getAt(i).canPickup){
+                    if(frog.bound && player.robotForm){
                     //pickup the whole group. can still modify x and y
                     player.pickup(groupPickup);
-                }
-                else 
+                    break;
+                    }
+                 else 
                     //default single objet
                     player.pickup(groupPickup.getAt(i));
-                break;
+                    break;
+                }
+                else
+                    failPickup = true;
+                    
             }
         }
+        if(failPickup && player.robotForm)
+            roboESound.play();
         needPickup = false;
     }
 
@@ -191,8 +204,12 @@ function update() {
             else
                 frog.bound = false;
             //check if on platform
+            if(frog.world.y > 1408){
+                console.log(frog);
+                winSound.play();
+            }
+                
         }
-
         needDrop = false;
     }
 
